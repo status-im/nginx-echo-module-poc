@@ -1,0 +1,28 @@
+services:
+  nginx:
+    image: "openresty/openresty:1.21.4.1-0-alpine"
+    ports:
+      - 8080:80
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d
+    networks:
+      - nginx_poc
+
+  backend_one:
+    build:
+      context: ./backend
+    environment:
+      - BACKEND_NO=one
+    networks:
+      - nginx_poc  
+  
+  backend_two:
+    build:
+      context: ./backend
+    environment:
+      - BACKEND_NO=two
+    networks:
+      - nginx_poc
+
+networks:
+  nginx_poc:
