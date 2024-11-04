@@ -1,31 +1,46 @@
-ARG nginx_version=1.23.2
+# Start from an Ubuntu base image
+FROM ubuntu:latest
 
-FROM debian:bullseye-slim AS builder
+# Environment variables for non-interactive installation
+ENV DEBIAN_FRONTEND=noninteractive
 
-ARG nginx_version
+# Add Ondrej's PPA for NGINX with Lua support
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:ondrej/nginx && \
+    apt-get update
 
-ENV NGINX_VERSION=${nginx_version}
-
-RUN apt update && \
-    apt install -y \
-    build-essential \
+# Install NGINX and Lua dependencies
+RUN apt-get install -y \
+    nginx \
     curl \
-    git \
-    libpcre++-dev \
-    zlib1g-dev
+    zip \
+    luajit \
+    libnginx-mod-http-lua \
+    libnginx-mod-http-ndk \
+    lua-resty-core \
+    lua-resty-lrucache \
+    lua-cjson && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN curl http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz -o /tmp/nginx-${NGINX_VERSION}.tar.gz && \
-    cd /tmp && \
-    tar xvzf nginx-${NGINX_VERSION}.tar.gz
+# Ensure Lua directory structure exists for resty
+RUN mkdir -p /usr/local/share/lua/5.1/resty
 
-RUN git clone https://github.com/openresty/echo-nginx-module.git /tmp/echo-nginx-module && \
-    cd /tmp/nginx-${NGINX_VERSION} && \
-    ./configure --with-compat --add-dynamic-module=/tmp/echo-nginx-module && \
-    make -j2 && \
-    make install
+# Download and install lua-resty-string
+RUN curl -L -o /tmp/lua-resty-string.zip https://github.com/openresty/lua-resty-string/archive/refs/heads/master.zip && \
+    unzip /tmp/lua-resty-string.zip -d /tmp && \
+    cp -r /tmp/lua-resty-string-master/lib/resty/* /usr/local/share/lua/5.1/resty/ && \
+    rm -rf /tmp/lua-resty-string.zip /tmp/lua-resty-string-master
 
-FROM nginx:${nginx_version}
+# Copy Lua resty libraries from GitHub to the correct path
+RUN curl -L -o /tmp/lua-resty-http.zip https://github.com/ledgetech/lua-resty-http/archive/refs/heads/master.zip && \
+    unzip /tmp/lua-resty-http.zip -d /tmp && \
+    cp -r /tmp/lua-resty-http-master/lib/resty/* /usr/local/share/lua/5.1/resty/ && \
+    rm -rf /tmp/lua-resty-http.zip /tmp/lua-resty-http-master
 
-COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/* /etc/nginx/modules/
+# Set up NGINX to run in the foreground
+CMD ["nginx", "-g", "daemon off;"]
 
-COPY --from=builder /usr/local/lib/* /lib/x86_64-linux-gnu/
+# Expose HTTP and HTTPS ports
+EXPOSE 80 443
