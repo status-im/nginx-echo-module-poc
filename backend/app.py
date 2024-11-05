@@ -26,7 +26,7 @@ def main_route():
         logger.warning(f"Big payload of 64KB at backend {backend_no}")
         return f"Big payload of 64KB  at backend {backend_no}", 200
 
-    if f'backend=backend_{backend_no}' in data:
+    if f'backend_{backend_no}' in data:
         logger.info(f"Processing webhook request on backend {backend_no}")
         return f"Request processed on backend {backend_no}", 200
     

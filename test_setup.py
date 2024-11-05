@@ -6,8 +6,8 @@ BASE_URL = "http://0.0.0.0:8080"
 
 # Test cases
 test_cases = [
-    ("backend=backend_one", 200, "backend_one"),
-    ("backend=backend_two", 200, "backend_two"),
+    ("backend_one", 200, "backend_one"),
+    ("backend_two", 200, "backend_two"),
     ("fail_one", 404, "backend_one failure"),
     ("fail_two", 404, "backend_two failure"),
     ("fail_all", 404, "all backends failure")
