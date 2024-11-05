@@ -23,6 +23,9 @@ function _M.broadcast_request()
     local headers = ngx.req.get_headers()
     local args = ngx.req.get_uri_args()
     local body_data = ngx.req.get_body_data() -- Will be nil for GET requests
+
+    return_status = 200
+    result_body = {}
     
     for _, server in ipairs(upstream_servers) do
         local res, err = http_client:request_uri(server,{
@@ -39,18 +42,15 @@ function _M.broadcast_request()
         end
 
         if res.status >= 400 then
-            ngx.status = res.status
-            ngx.header.content_type = "application/json"
-            ngx.say(res.body)
-            return ngx.exit(res.status)
-        else
-            results[#results + 1] = { status = res.status, body = res.body }
+            return_status = res.status
         end
+
+        result_body[server] = { result = res.body }
     end
 
-    ngx.status = results[1].status
+    ngx.status = return_status
     ngx.header.content_type = "application/json"
-    ngx.say(results[1].body)
+    ngx.say(cjson.encode(result_body))
     return
 end
 
