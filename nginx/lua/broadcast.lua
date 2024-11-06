@@ -2,20 +2,16 @@ local _M = {}
 local http = require("resty.http")
 local cjson = require "cjson"
 
-function _M.broadcast_request()
+function _M.broadcast_request(upstream_servers)
     -- Prepare to forward the request
     local http_client = http.new()
 
-    local upstream_servers_json = ngx.shared.upstream_servers:get("list")
-    if not upstream_servers_json then
+    if not upstream_servers then
         ngx.log(ngx.ERR, "Failed to retrieve upstream servers list!")
         ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
         ngx.say(cjson.encode({ error = "Upstream servers not configured." }))
         return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
-
-    local upstream_servers = cjson.decode(upstream_servers_json)
-    local results = {}
 
     ngx.req.read_body()
     -- Prepare the request parameters
